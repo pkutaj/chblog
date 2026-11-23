@@ -64,6 +64,10 @@ mark{background:#ff0;color:inherit}
     let items = posts.filter(p=>
       (!a || (p.authors||[]).some(n=>n.toLowerCase().includes(a))) &&
       (!query || matchIndex(p.title, query)>=0 || (!m && (p.authors||[]).some(n=>matchIndex(n, query)>=0)))).map(p=>({p}));
+    const u = new URLSearchParams();
+    if(q.value.trim()) u.set('q', q.value.trim());
+    if(author) u.set('a', author);
+    history.replaceState(null, '', u.toString() ? '?' + u : location.pathname);
     document.getElementById('cnt').textContent = items.length + ' / ' + posts.length + ' posts';
     list.innerHTML = items.map(({p}) =>
       `<li><d>${p.date_short}</d><a href="${p.link}">${hl(p.title, query)}</a>${(p.authors||[]).map(n=>`<a class=au href=# data-a="${esc(n)}">${esc(n)}</a>`).join('')}</li>`
@@ -76,7 +80,10 @@ mark{background:#ff0;color:inherit}
     if(e.key==='Escape'){ q.value=''; author=''; render(''); q.blur() }
   });
 
-  render('');
+  const init = new URLSearchParams(location.search);
+  q.value = init.get('q') || '';
+  author = init.get('a') || '';
+  render(q.value.trim());
   q.focus();
 })();
 </script>
