@@ -15,6 +15,7 @@ mark{background:#ff0;color:inherit}
 <body>
 <input id=q type=text placeholder="/ to search titles and authors" autocomplete=off spellcheck=false>
 <div id=cur style="margin:0 0 1em;display:none"></div>
+<div id=cnt style="margin:0 0 1em;opacity:.6"></div>
 <ul id=list></ul>
 <script>
 (async function(){
@@ -63,6 +64,7 @@ mark{background:#ff0;color:inherit}
     let items = posts.filter(p=>
       (!a || (p.authors||[]).some(n=>n.toLowerCase().includes(a))) &&
       (!query || matchIndex(p.title, query)>=0 || (!m && (p.authors||[]).some(n=>matchIndex(n, query)>=0)))).map(p=>({p}));
+    document.getElementById('cnt').textContent = items.length + ' / ' + posts.length + ' posts';
     list.innerHTML = items.map(({p}) =>
       `<li><d>${p.date_short}</d><a href="${p.link}">${hl(p.title, query)}</a>${(p.authors||[]).map(n=>`<a class=au href=# data-a="${esc(n)}">${esc(n)}</a>`).join('')}</li>`
     ).join('');
