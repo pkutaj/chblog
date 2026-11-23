@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>clickhouse.com/blog</title>
+<style>
+d{width:4em}
+li{display:flex;margin:0 0 .9em}
+ul{margin:0;padding:0}
+input{font:inherit;width:100%;margin:0 0 1.2em;border:1px solid;padding:.2em}
+a.au{color:inherit;opacity:.55;font-size:.85em;margin-left:.6em;cursor:pointer}
+mark{background:#ff0;color:inherit}
+</style>
+</head>
+<body>
+<input id=q type=text placeholder="/ to search titles, or @author" autocomplete=off spellcheck=false>
+<div id=cur style="margin:0 0 1em;display:none"></div>
+<ul id=list></ul>
+<script>
+(async function(){
+  const posts = await (await fetch('posts.json')).json();
+
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+  function matchIndex(text, query){
+    return text.toLowerCase().indexOf(query.toLowerCase());
+  }
+
+  function hl(text, query){
+    if(!query) return esc(text);
+    const idx = matchIndex(text, query);
+    if(idx===-1) return esc(text);
+    return esc(text.slice(0,idx)) + '<mark>' + esc(text.slice(idx,idx+query.length)) + '</mark>' + esc(text.slice(idx+query.length));
+  }
+
+  const list = document.getElementById('list');
+  const q = document.getElementById('q');
+
+  const names = [...new Set(posts.flatMap(p=>p.authors||[]))].map(n=>n.toLowerCase());
+  const cur = document.getElementById('cur');
+  let author = '';
+  function setAuthor(a){ author = a; render(q.value.trim()); }
+  list.addEventListener('click', e=>{
+    const t = e.target.closest('a.au');
+    if(t){ e.preventDefault(); setAuthor(t.dataset.a); }
+  });
+  cur.addEventListener('click', ()=>setAuthor(''));
+
+  function render(query){
+    // "@name rest" in the box also filters by author
+    let a = author.toLowerCase();
+    let m = null;
+    if(query[0]==='@'){
+      const w = query.slice(1).split(/\s+/);
+      for(let n=w.length; n>=1; n--){
+        const cand = w.slice(0,n).join(' ').toLowerCase();
+        if(cand && names.some(x=>x.includes(cand))){ m = [0, w.slice(0,n).join(' ')]; a = cand; query = w.slice(n).join(' '); break; }
+      }
+      if(!m){ m = [0, query.slice(1)]; a = query.slice(1).trim().toLowerCase(); query = ''; }
+    }
+    cur.style.display = (author||m) ? '' : 'none';
+    cur.textContent = (author||m) ? 'author: ' + (m ? m[1] : author) + (author&&!m ? '  [x clear]' : '') : '';
+    let items = posts.filter(p=>
+      (!a || (p.authors||[]).some(n=>n.toLowerCase().includes(a))) &&
+      (!query || matchIndex(p.title, query)>=0)).map(p=>({p}));
+    list.innerHTML = items.map(({p}) =>
+      `<li><d>${p.date_short}</d><a href="${p.link}">${hl(p.title, query)}</a>${(p.authors||[]).map(n=>`<a class=au href=# data-a="${esc(n)}">${esc(n)}</a>`).join('')}</li>`
+    ).join('');
+  }
+
+  q.addEventListener('input', () => render(q.value.trim()));
+  document.addEventListener('keydown', (e) => {
+    if(e.key==='/' && document.activeElement!==q){ e.preventDefault(); q.focus() }
+    if(e.key==='Escape'){ q.value=''; author=''; render(''); q.blur() }
+  });
+
+  render('');
+  q.focus();
+})();
+</script>
+</body>
+</html>
