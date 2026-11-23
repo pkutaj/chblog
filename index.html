@@ -13,7 +13,7 @@ mark{background:#ff0;color:inherit}
 </style>
 </head>
 <body>
-<input id=q type=text placeholder="/ to search titles, or @author" autocomplete=off spellcheck=false>
+<input id=q type=text placeholder="/ to search titles and authors" autocomplete=off spellcheck=false>
 <div id=cur style="margin:0 0 1em;display:none"></div>
 <ul id=list></ul>
 <script>
@@ -62,7 +62,7 @@ mark{background:#ff0;color:inherit}
     cur.textContent = (author||m) ? 'author: ' + (m ? m[1] : author) + (author&&!m ? '  [x clear]' : '') : '';
     let items = posts.filter(p=>
       (!a || (p.authors||[]).some(n=>n.toLowerCase().includes(a))) &&
-      (!query || matchIndex(p.title, query)>=0)).map(p=>({p}));
+      (!query || matchIndex(p.title, query)>=0 || (!m && (p.authors||[]).some(n=>matchIndex(n, query)>=0)))).map(p=>({p}));
     list.innerHTML = items.map(({p}) =>
       `<li><d>${p.date_short}</d><a href="${p.link}">${hl(p.title, query)}</a>${(p.authors||[]).map(n=>`<a class=au href=# data-a="${esc(n)}">${esc(n)}</a>`).join('')}</li>`
     ).join('');
